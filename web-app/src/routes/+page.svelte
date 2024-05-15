@@ -1,77 +1,52 @@
 <script lang="ts">
-	let fileContent = '';
-	let connectionsContent = '';
-	let showButton = false;
+	import { quantities } from '../data/physicalQuantities';
+	import { phenomena } from '../data/effectsChain';
+	import { Graph } from './graph';
 
-	const checkUploadStatus = () => {
-		showButton = fileContent !== '' && connectionsContent !== '';
-	};
+	let start = 0;
+	let end = 0;
+	let shortestPath: string[] = [];
 
-	const handleFileUpload = async (event: Event, type: string) => {
-		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
-		const reader = new FileReader();
+	const graph = new Graph();
 
-		if (!file) return;
+	for (let quantity of quantities) {
+		graph.addNode(quantity);
+	}
 
-		reader.onload = () => {
-			if (type === 'effects') {
-				fileContent = reader.result as string;
-				const effectsLabel = document.getElementById('effects');
-				if (effectsLabel) effectsLabel.style.backgroundColor = 'aquamarine';
-			} else if (type === 'connections') {
-				connectionsContent = reader.result as string;
-				const connectionsLabel = document.getElementById('connections');
-				if (connectionsLabel) connectionsLabel.style.backgroundColor = 'aquamarine';
-			}
-			checkUploadStatus();
-		};
+	for (let connection of phenomena) {
+		for (let i of connection.inputQuantities) {
+			graph.addEdge(i, connection.outputQuantities, connection.name);
+		}
+	}
 
-		reader.readAsText(file, 'UTF-8');
-	};
+	function findShortestPath() {
+		shortestPath = graph.findShortestPath(start, end) || [];
+	}
 </script>
 
-<!-- Home.svelte -->
 <svelte:head>
 	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<meta name="description" content="Coursework" />
 </svelte:head>
 
 <section>
 	<h1>
 		Поиск физических принципов действий <br /> на основе фонда физических эффектов
 	</h1>
-
-	<div>
-		<label for="effects-upload" class="upload-label" id="effects"
-			>Выберите файл физических эффектов</label
-		>
-		<input
-			id="effects-upload"
-			class="upload-input"
-			type="file"
-			on:change={(event) => handleFileUpload(event, 'effects')}
-			accept=".txt"
-		/>
-	</div>
-
-	<div>
-		<label for="connections-upload" class="upload-label" id="connections"
-			>Выберите файл соединений</label
-		>
-		<input
-			id="connections-upload"
-			class="upload-input"
-			type="file"
-			on:change={(event) => handleFileUpload(event, 'connections')}
-			accept=".txt"
-		/>
-	</div>
-
-	{#if showButton}
-		<a href="/graph">Continue</a>
-	{/if}
+	<label for="start">Начальное значение</label>
+	<input type="number" id="start" bind:value={start} />
+	<label for="end">Конечное значение</label>
+	<input type="number" id="end" bind:value={end} />
+	<button on:click={findShortestPath}>Найти кратчайший путь</button>
 </section>
+
+<div class="results">
+	{#if shortestPath.length > 0}
+		<p>Кратчайший путь: {shortestPath.join(' -> ')}</p>
+	{:else}
+		<p>Нет пути между введенными значениями.</p>
+	{/if}
+</div>
 
 <style>
 	section {
@@ -87,28 +62,10 @@
 		margin-bottom: 20px;
 	}
 
-	div {
-		margin-bottom: 20px;
-	}
-
-	.upload-label {
-		font-size: 16px;
-		margin-bottom: 5px;
-		border: 1px solid #ccc;
-		border-radius: 10px;
-		padding: 5px;
-		cursor: pointer;
-	}
-
-	.upload-input {
-		border: 1px solid #ccc;
-		border-radius: 5px;
-		padding: 10px;
-		width: 300px;
-	}
-
-	.upload-input[type='file'] {
-		position: absolute;
-		clip: rect(0, 0, 0, 0);
+	.results {
+		display: flex;
+		align-items: flex-start;
+		margin-top: 20px;
+		flex-direction: column;
 	}
 </style>
