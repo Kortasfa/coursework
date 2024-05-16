@@ -1,4 +1,4 @@
-import type { Quantity } from "../data/physicalQuantities";
+import type { Quantity } from "./physicalQuantities";
 
 export class Graph {
     nodes: Quantity[];
@@ -46,13 +46,6 @@ export class Graph {
             }
         }
 
-        return null; // No path found
-    }
-
-    printGraph() {
-        console.log("Nodes:");
-        this.nodes.forEach(node => console.log(node.name));
-        console.log("Edges:");
-        this.edges.forEach(({ from, to, phenomenonName }) => console.log(`${from.name} -> ${to.name} (${phenomenonName})`));
+        return null;
     }
 }
