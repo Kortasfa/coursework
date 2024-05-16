@@ -1,3 +1,6 @@
+This app has been deployed to **Vercel**. Check it Out:
+[`https://coursework-mu.vercel.app/`](https://coursework-mu.vercel.app/).
+
 # create-svelte
 
 Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
