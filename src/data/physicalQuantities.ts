@@ -3,6 +3,11 @@ export type Quantity = {
     name: string;
 }
 
+export function findQuantitieName(id: number): string | undefined {
+    const quantity = quantities.find((q) => q.id === id);
+    return quantity ? quantity.name : undefined;
+}
+
 export const quantities: Quantity[] = [
     { id: 1, name: 'Гравитационное поле' },
     { id: 2, name: 'Давление' },

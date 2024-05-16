@@ -1,12 +1,18 @@
 <script lang="ts">
-	import { AppBar } from '@skeletonlabs/skeleton';
-	import { quantities } from '../data/physicalQuantities';
-	import { phenomena } from '../data/effectsChain';
-	import { Graph } from '../data/graph';
+	import { findQuantitieName, quantities } from '../data/physicalQuantities';
+	import { phenomena, type Phenomenon } from '../data/effectsChain';
+	import { Graph, type Edge } from '../data/graph';
+
+	type TableData = {
+		phenomenonName: string;
+		inputQuantities: string[];
+		outputQuantitie: string;
+	};
 
 	let start = 0;
 	let end = 0;
-	let shortestPath: string[] | null = null;
+	let shortestPath: Edge[]  = [];
+	let tableData: TableData[] = [];
 
 	const graph = new Graph();
 
@@ -21,7 +27,41 @@
 	}
 
 	function findShortestPath() {
-		shortestPath = graph.findShortestPath(start, end) || [];
+		shortestPath = graph.findShortestPath(start, end);
+		tableData = []
+		if (shortestPath) {
+			shortestPath.forEach((path) => {
+				let data = findPhenomenaData(path.phenomenonName);
+				let inputQuantities: string[] = [];
+				data?.inputQuantities.forEach((element) => {
+					let quantityName = findQuantitieName(element);
+					if (quantityName) {
+						inputQuantities.push(quantityName);
+					}
+				});
+
+				if (data) {
+					tableData.push({
+						phenomenonName: path.phenomenonName,
+						inputQuantities: inputQuantities,
+						outputQuantitie: findQuantitieName(data.outputQuantities) || ''
+					});
+				}
+			});
+		}
+	}
+
+	function findPhenomenaData(name: string): Phenomenon | null {
+		for (let connection of phenomena) {
+			if (connection.name === name) {
+				return {
+					name: connection.name,
+					inputQuantities: connection.inputQuantities,
+					outputQuantities: connection.outputQuantities
+				};
+			}
+		}
+		return null;
 	}
 </script>
 
@@ -72,25 +112,47 @@
 			</section>
 		</div>
 	</div>
-	<button type="button" class="btn variant-filled card-hover" on:click={findShortestPath}
+	<button type="button" class="btn variant-filled card-hover marginBottom" on:click={findShortestPath}
 		>Найти кратчайший путь</button
 	>
-	{#if shortestPath}
-		{#if shortestPath.length > 0}
-			<button type="button" class="btn variant-filled card-hover" on:click={findShortestPath}
-				>Искать следующий путь</button
-			>
-			<p>{shortestPath.join(' -> ')}</p>
-		{:else}
-			<p>Нет пути между введенными значениями.</p>
-		{/if}
-	{/if}
+	{#key shortestPath}
+		{#key tableData}
+			{#if shortestPath.length > 0}
+				<div class="table-container inputs">
+					{#each tableData as table, i}
+						<table class="table table-hover">
+							<caption>
+								{table.phenomenonName}
+							</caption>
+							<thead>
+								<tr>
+									<th>Входящие ФЭ</th>
+									<th>Выходящие ФЭ</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each table.inputQuantities as input, i}
+									<tr>
+										<td>{input}</td>
+										<td>{i == 0 ? table.outputQuantitie : ''}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					{/each}
+				</div>
+			{/if}
+		{/key}
+	{/key}
 </div>
 
 <style>
 	.inputs {
 		display: flex;
 		gap: 20px;
+		margin-bottom: 20px;
+	}
+	.marginBottom{
 		margin-bottom: 20px;
 	}
 </style>

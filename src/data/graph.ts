@@ -1,8 +1,10 @@
 import type { Quantity } from "./physicalQuantities";
 
+export type Edge = { from: Quantity, to: Quantity, phenomenonName: string }
+
 export class Graph {
     nodes: Quantity[];
-    edges: { from: Quantity, to: Quantity, phenomenonName: string }[];
+    edges: Edge[];
 
     constructor() {
         this.nodes = [];
@@ -21,14 +23,14 @@ export class Graph {
         }
     }
 
-    findShortestPath(startId: number, endId: number): string[] | null {
+    findShortestPath(startId: number, endId: number): Edge[] {
         const startNode = this.nodes.find(node => node.id === startId);
         const endNode = this.nodes.find(node => node.id === endId);
 
-        if (!startNode || !endNode) return null;
+        if (!startNode || !endNode) return [];
 
         const visited: { [key: number]: boolean } = {};
-        const queue: { node: Quantity, path: string[] }[] = [];
+        const queue: { node: Quantity, path: Edge[] }[] = [];
         queue.push({ node: startNode, path: [] });
 
         while (queue.length > 0) {
@@ -41,11 +43,11 @@ export class Graph {
 
             for (const edge of this.edges) {
                 if (edge.from === node && !visited[edge.to.id]) {
-                    queue.push({ node: edge.to, path: [...path, edge.phenomenonName] });
+                    queue.push({ node: edge.to, path: [...path, edge] });
                 }
             }
         }
 
-        return null;
+        return [];
     }
 }
