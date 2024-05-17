@@ -50,4 +50,37 @@ export class Graph {
 
         return [];
     }
+
+    findAllPaths(startId: number, endId: number): Edge[][] {
+        const startNode = this.nodes.find(node => node.id === startId);
+        const endNode = this.nodes.find(node => node.id === endId);
+
+        if (!startNode || !endNode) return [];
+
+        const allPaths: Edge[][] = [];
+        const path: Edge[] = [];
+        const visited: { [key: number]: boolean } = {};
+
+        const dfs = (currentNode: Quantity) => {
+            if (currentNode === endNode) {
+                allPaths.push([...path]);
+                return;
+            }
+
+            visited[currentNode.id] = true;
+
+            for (const edge of this.edges) {
+                if (edge.from === currentNode && !visited[edge.to.id]) {
+                    path.push(edge);
+                    dfs(edge.to);
+                    path.pop();
+                }
+            }
+
+            visited[currentNode.id] = false;
+        }
+
+        dfs(startNode);
+        return allPaths;
+    }
 }

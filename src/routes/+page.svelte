@@ -11,8 +11,9 @@
 
 	let start = 0;
 	let end = 0;
-	let shortestPath: Edge[] = [];
-	let tableData: TableData[] = [];
+	let allPaths: Edge[][] = [];
+	let allPathsTableData: TableData[][] = [];
+	let loading = false;
 
 	const graph = new Graph();
 
@@ -26,29 +27,37 @@
 		}
 	}
 
-	function findShortestPath() {
-		shortestPath = graph.findShortestPath(start, end);
-		tableData = [];
-		if (shortestPath) {
-			shortestPath.forEach((path) => {
-				let data = findPhenomenaData(path.phenomenonName);
-				let inputQuantities: string[] = [];
-				data?.inputQuantities.forEach((element) => {
-					let quantityName = findQuantitieName(element);
-					if (quantityName) {
-						inputQuantities.push(quantityName);
+	async function findAllPaths() {
+		loading = true;
+		await new Promise((r) => setTimeout(r, 0));
+		allPaths = graph.findAllPaths(start, end);
+		allPathsTableData = [];
+		if (allPaths) {
+			allPaths.forEach((path) => {
+				let pathTableData: TableData[] = [];
+				path.forEach((pathData) => {
+					let data = findPhenomenaData(pathData.phenomenonName);
+					let inputQuantities: string[] = [];
+					data?.inputQuantities.forEach((element) => {
+						let quantityName = findQuantitieName(element);
+						if (quantityName) {
+							inputQuantities.push(quantityName);
+						}
+					});
+
+					if (data) {
+						pathTableData.push({
+							phenomenonName: pathData.phenomenonName,
+							inputQuantities: inputQuantities,
+							outputQuantitie: findQuantitieName(data.outputQuantities) || ''
+						});
 					}
 				});
-
-				if (data) {
-					tableData.push({
-						phenomenonName: path.phenomenonName,
-						inputQuantities: inputQuantities,
-						outputQuantitie: findQuantitieName(data.outputQuantities) || ''
-					});
-				}
+				allPathsTableData.push(pathTableData);
 			});
 		}
+		allPathsTableData.sort((a, b) => a.length - b.length);
+		loading = false;
 	}
 </script>
 
@@ -84,10 +93,10 @@
 					путь преобразования.
 				</p>
 				<br />
-				<h4 class="h4">Найти кратчайший путь</h4>
+				<h4 class="h4">Найти все пути</h4>
 				<p>
-					Нажмите кнопку "Найти кратчайший путь", чтобы приложение выполнело <br /> поиск кратчайшего
-					пути между выбранными вами величинами.
+					Нажмите кнопку "Найти все пути", чтобы приложение выполнело <br /> поиск всех путей между выбранными
+					вами величинами.
 				</p>
 				<br />
 				<h4 class="h4">Результаты</h4>
@@ -99,41 +108,53 @@
 			</section>
 		</div>
 	</div>
-
-	<button
-		type="button"
-		class="btn variant-filled card-hover marginBottom"
-		on:click={findShortestPath}>Найти кратчайший путь</button
-	>
-	{#key shortestPath}
-		{#key tableData}
-			{#if shortestPath.length > 0}
-				<div class="table-container inputs">
-					{#each tableData as table, i}
-						<table class="table table-hover">
-							<caption>
-								{table.phenomenonName}
-							</caption>
-							<thead>
-								<tr>
-									<th>Входящие ФЭ</th>
-									<th>Выходящие ФЭ</th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each table.inputQuantities as input, i}
-									<tr>
-										<td>{input}</td>
-										<td>{i == 0 ? table.outputQuantitie : ''}</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
+	<div class="inputs centered">
+		<button type="button" class="btn variant-filled card-hover" on:click={findAllPaths}
+			>Найти все пути</button
+		>
+		{#if loading}
+			<p>Загрузка...</p>
+		{/if}
+		{#if allPaths.length > 0 && !loading}
+			<p>Найдено {allPaths.length}</p>
+		{/if}
+	</div>
+	{#if !loading}
+		{#key allPaths}
+			{#key allPathsTableData}
+				{#if allPaths.length > 0}
+					{#each allPathsTableData as tables}
+						<div class="table-container inputs">
+							{#each tables as table, i}
+								<table class="table table-hover">
+									<caption>
+										{table.phenomenonName}
+									</caption>
+									<thead>
+										<tr>
+											<th>Входящие ФЭ</th>
+											<th>Выходящие ФЭ</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each table.inputQuantities as input, j}
+											<tr>
+												<td>{input}</td>
+												<td>{j == 0 ? table.outputQuantitie : ''}</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+								{#if i < tables.length - 1}
+									<div class="arrow">➡️</div>
+								{/if}
+							{/each}
+						</div>
 					{/each}
-				</div>
-			{/if}
+				{/if}
+			{/key}
 		{/key}
-	{/key}
+	{/if}
 </div>
 
 <style>
@@ -142,7 +163,10 @@
 		gap: 20px;
 		margin-bottom: 20px;
 	}
-	.marginBottom {
-		margin-bottom: 20px;
+	.centered {
+		align-items: center;
+	}
+	.arrow {
+		margin-top: 40px;
 	}
 </style>

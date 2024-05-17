@@ -20,8 +20,6 @@
 	import { AppRail, AppRailAnchor } from '@skeletonlabs/skeleton';
 	import { page } from '$app/stores';
 
-	let currentTile: number = 0;
-
 	function changeTheme(themeToChange: 'dark' | 'white') {
 		document.getElementById('html')?.classList.remove(themeToChange == 'dark' ? 'white' : 'dark');
 		document.getElementById('html')?.classList.add(themeToChange == 'dark' ? 'dark' : 'white');
@@ -52,22 +50,26 @@
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>
-	<div class="content">
-		<AppRail>
+	<div>
+		<AppRail class="fixed">
 			<AppRailAnchor href="/" selected={$page.url.pathname === '/'}>
-				<svelte:fragment slot="lead"><img src="home.svg" alt="home"/></svelte:fragment>
+				<svelte:fragment slot="lead"><img src="home.svg" alt="home" /></svelte:fragment>
 			</AppRailAnchor>
 			<AppRailAnchor href="/about" selected={$page.url.pathname === '/about'}>
-				<svelte:fragment slot="lead"><img src="info.svg" alt="info"/></svelte:fragment>
+				<svelte:fragment slot="lead"><img src="info.svg" alt="info" /></svelte:fragment>
+			</AppRailAnchor>
+			<AppRailAnchor href="/data" selected={$page.url.pathname === '/data'}>
+				<svelte:fragment slot="lead"><img src="data.svg" alt="info" /></svelte:fragment>
 			</AppRailAnchor>
 		</AppRail>
+		<div class="margin">
 		<slot />
+		</div>
 	</div>
 </AppShell>
 
 <style>
-	.content {
-		display: flex;
-		height: 100%;
+	.margin {
+		margin-left: 80px;
 	}
 </style>
