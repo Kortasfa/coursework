@@ -1,41 +1,28 @@
-This app has been deployed to **Vercel**. Check it Out:
-[`https://coursework-mu.vercel.app/`](https://coursework-mu.vercel.app/).
+# Физический Принцип Действия По Фонду Физических Эффектов
+##### Цель приложения: Поиск цепочек преобразования физических величин на основе базы физических эффектов. 🔍
 
-# create-svelte
+## Требования 👀
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+📄 Физические величины и база физических эффектов хранятся в самом приложении.
 
-## Creating a project
+🔗 Физические эффекты могут образовывать цепочки преобразования. 
 
-If you're seeing this, you've probably already done this step. Congrats!
+🔄 Задача заключается в нахождении цепочек преобразования от входной к выходной величине. 
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+## Как это работает? 🚀
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+📈 По базе физических эффектов строится граф. 
 
-## Developing
+🔍 Все пути между входной и выходной величинами находятся по возрастанию количества эффектов. 
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+📊 Результат выдается в файле с указанием эффектов на каждом шаге преобразования. 
 
-```bash
-npm run dev
+## Пример 🤖
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+➡️ Путь от 10 к 18: 10 → 18 (2 эффекта), затем цепочки из 2 звеньев: 10 → 12 → 18, 10 → 19 → 18 и т. д. 
 
-## Building
+📝 Формат ответа: Все возможные преобразования от начальной к конечной величине по возрастанию длины цепочек. 
 
-To create a production version of your app:
+## Примечание: Если решение не найдено, выводится сообщение об отсутствии результатов. 🚫
 
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+### 2024 Kortasfa
