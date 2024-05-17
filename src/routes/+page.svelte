@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { findQuantitieName, quantities } from '../data/physicalQuantities';
-	import { phenomena, type Phenomenon } from '../data/effectsChain';
+	import { phenomena, findPhenomenaData } from '../data/effectsChain';
 	import { Graph, type Edge } from '../data/graph';
 
 	type TableData = {
@@ -11,7 +11,7 @@
 
 	let start = 0;
 	let end = 0;
-	let shortestPath: Edge[]  = [];
+	let shortestPath: Edge[] = [];
 	let tableData: TableData[] = [];
 
 	const graph = new Graph();
@@ -28,7 +28,7 @@
 
 	function findShortestPath() {
 		shortestPath = graph.findShortestPath(start, end);
-		tableData = []
+		tableData = [];
 		if (shortestPath) {
 			shortestPath.forEach((path) => {
 				let data = findPhenomenaData(path.phenomenonName);
@@ -49,19 +49,6 @@
 				}
 			});
 		}
-	}
-
-	function findPhenomenaData(name: string): Phenomenon | null {
-		for (let connection of phenomena) {
-			if (connection.name === name) {
-				return {
-					name: connection.name,
-					inputQuantities: connection.inputQuantities,
-					outputQuantities: connection.outputQuantities
-				};
-			}
-		}
-		return null;
 	}
 </script>
 
@@ -112,8 +99,11 @@
 			</section>
 		</div>
 	</div>
-	<button type="button" class="btn variant-filled card-hover marginBottom" on:click={findShortestPath}
-		>Найти кратчайший путь</button
+
+	<button
+		type="button"
+		class="btn variant-filled card-hover marginBottom"
+		on:click={findShortestPath}>Найти кратчайший путь</button
 	>
 	{#key shortestPath}
 		{#key tableData}
@@ -152,7 +142,7 @@
 		gap: 20px;
 		margin-bottom: 20px;
 	}
-	.marginBottom{
+	.marginBottom {
 		margin-bottom: 20px;
 	}
 </style>
