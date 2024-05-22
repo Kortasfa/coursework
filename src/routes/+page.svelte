@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { findQuantitieName, quantities } from '../data/physicalQuantities';
-	import { phenomena, findPhenomenaData } from '../data/effectsChain';
-	import { Graph, type Edge } from '../data/graph';
+	import { findPhenomenaData } from '../data/effectsChain';
+	import { graph, type Edge } from '../data/graph';
+	import { writable } from 'svelte/store';
+	import { TabGroup, Tab } from '@skeletonlabs/skeleton';
+	import { ListBox, ListBoxItem } from '@skeletonlabs/skeleton';
+
+	let tabSet: number = 0;
+	let bansId: number[] = [];
 
 	type TableData = {
 		phenomenonName: string;
@@ -9,31 +15,23 @@
 		outputQuantitie: string;
 	};
 
-	let start = 0;
-	let end = 0;
-	let allPaths: Edge[][] = [];
-	let allPathsTableData: TableData[][] = [];
-	let loading = false;
-
-	const graph = new Graph();
-
-	for (let quantity of quantities) {
-		graph.addNode(quantity);
-	}
-
-	for (let connection of phenomena) {
-		for (let i of connection.inputQuantities) {
-			graph.addEdge(i, connection.outputQuantities, connection.name);
-		}
-	}
+	const start = writable(0);
+	const end = writable(0);
+	const allPaths = writable<Edge[][]>([]);
+	const allPathsTableData = writable<TableData[][]>([]);
+	const loading = writable(false);
 
 	async function findAllPaths() {
-		loading = true;
+		loading.set(true);
 		await new Promise((r) => setTimeout(r, 0));
-		allPaths = graph.findAllPaths(start, end);
-		allPathsTableData = [];
-		if (allPaths) {
-			allPaths.forEach((path) => {
+		const startValue = $start;
+		const endValue = $end;
+		const paths = graph.findAllPaths(startValue, endValue, bansId);
+		allPaths.set(paths);
+		const pathsTableData: TableData[][] = [];
+
+		if (paths) {
+			paths.forEach((path) => {
 				let pathTableData: TableData[] = [];
 				path.forEach((pathData) => {
 					let data = findPhenomenaData(pathData.phenomenonName);
@@ -53,30 +51,52 @@
 						});
 					}
 				});
-				allPathsTableData.push(pathTableData);
+				pathsTableData.push(pathTableData);
 			});
 		}
-		allPathsTableData.sort((a, b) => a.length - b.length);
-		loading = false;
+		pathsTableData.sort((a, b) => a.length - b.length);
+		allPathsTableData.set(pathsTableData);
+		loading.set(false);
 	}
 </script>
 
 <div class="p-4">
 	<div class="inputs">
 		<div class="card p-1">
-			<header class="card-header h3">Входное значение</header>
-			<section class="p-4">
-				<select bind:value={start} class="select" size="9">
-					{#each quantities as quantity}
-						<option value={quantity.id}>{quantity.name}</option>
-					{/each}
-				</select>
-			</section>
+			<TabGroup>
+				<Tab bind:group={tabSet} name="tab1" value={0}>Входы</Tab>
+				<Tab bind:group={tabSet} name="tab2" value={1}>Запреты</Tab>
+				<svelte:fragment slot="panel">
+					{#if tabSet === 0}
+						<header class="card-header h3">Входное значение</header>
+						<section class="p-4">
+							<select bind:value={$start} class="select" size="9">
+								{#each quantities as quantity}
+									<option value={quantity.id}>
+										{quantity.name}
+									</option>
+								{/each}
+							</select>
+						</section>
+					{:else if tabSet === 1}
+						<header class="card-header h3">Запреты на входы</header>
+						<section class="p-4 bans">
+							<ListBox multiple>
+								{#each quantities as quantity}
+									<ListBoxItem bind:group={bansId} name="medium" value={quantity.id}>
+										{quantity.name}
+									</ListBoxItem>
+								{/each}
+							</ListBox>
+						</section>
+					{/if}
+				</svelte:fragment>
+			</TabGroup>
 		</div>
 		<div class="card p-1">
 			<header class="card-header h3">Конечное значение</header>
 			<section class="p-4">
-				<select bind:value={end} class="select" size="9">
+				<select bind:value={$end} class="select" size="9">
 					{#each quantities as quantity}
 						<option value={quantity.id}>{quantity.name}</option>
 					{/each}
@@ -109,51 +129,47 @@
 		</div>
 	</div>
 	<div class="inputs centered">
-		<button type="button" class="btn variant-filled card-hover" on:click={findAllPaths}
-			>Найти все пути</button
-		>
-		{#if loading}
+		<button type="button" class="btn variant-filled card-hover" on:click={findAllPaths}>
+			Найти все пути
+		</button>
+		{#if $loading}
 			<p>Загрузка...</p>
 		{/if}
-		{#if allPaths.length > 0 && !loading}
-			<p>Найдено {allPaths.length}</p>
+		{#if $allPaths.length > 0 && !$loading}
+			<p>Найдено {$allPaths.length}</p>
 		{/if}
 	</div>
-	{#if !loading}
-		{#key allPaths}
-			{#key allPathsTableData}
-				{#if allPaths.length > 0}
-					{#each allPathsTableData as tables}
-						<div class="table-container inputs">
-							{#each tables as table, i}
-								<table class="table table-hover">
-									<caption>
-										{table.phenomenonName}
-									</caption>
-									<thead>
-										<tr>
-											<th>Входящие ФЭ</th>
-											<th>Выходящие ФЭ</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#each table.inputQuantities as input, j}
-											<tr>
-												<td>{input}</td>
-												<td>{j == 0 ? table.outputQuantitie : ''}</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-								{#if i < tables.length - 1}
-									<div class="arrow">➡️</div>
-								{/if}
-							{/each}
-						</div>
+	{#if !$loading}
+		{#if $allPaths.length > 0}
+			{#each $allPathsTableData as tables}
+				<div class="table-container inputs">
+					{#each tables as table, i}
+						<table class="table table-hover">
+							<caption>
+								{table.phenomenonName}
+							</caption>
+							<thead>
+								<tr>
+									<th>Входящие ФЭ</th>
+									<th>Выходящие ФЭ</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each table.inputQuantities as input, j}
+									<tr>
+										<td>{input}</td>
+										<td>{j == 0 ? table.outputQuantitie : ''}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+						{#if i < tables.length - 1}
+							<div class="arrow">➡️</div>
+						{/if}
 					{/each}
-				{/if}
-			{/key}
-		{/key}
+				</div>
+			{/each}
+		{/if}
 	{/if}
 </div>
 
@@ -168,5 +184,9 @@
 	}
 	.arrow {
 		margin-top: 40px;
+	}
+	.bans {
+		height: 350px;
+		overflow: auto;
 	}
 </style>
