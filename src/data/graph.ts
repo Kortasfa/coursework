@@ -52,42 +52,39 @@ export class Graph {
         return [];
     }
 
-    findAllPaths(startId: number, endId: number, bansId: number[]): Edge[][] {
+    findAllPaths(startId: number, endId: number, depthLimit: number): Edge[][] {
         const startNode = this.nodes.find(node => node.id === startId);
         const endNode = this.nodes.find(node => node.id === endId);
-    
+
         if (!startNode || !endNode) return [];
-    
+
         const allPaths: Edge[][] = [];
-        const path: Edge[] = [];
-        const visited: { [key: number]: boolean } = {};
-    
-        const bannedSet = new Set(bansId);
-    
-        const dfs = (currentNode: Quantity) => {
+        const queue: { path: Edge[], depth: number }[] = [{ path: [], depth: 0 }];
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            if (!current) continue;
+
+            const { path, depth } = current;
+
+            const currentNode = path.length > 0 ? path[path.length - 1].to : startNode;
+
             if (currentNode === endNode) {
-                allPaths.push([...path]);
-                return;
+                allPaths.push(path);
+                continue;
             }
-    
-            visited[currentNode.id] = true;
-    
-            for (const edge of this.edges) {
-                if (edge.from === currentNode && !visited[edge.to.id] && !bannedSet.has(edge.to.id)) {
-                    path.push(edge);
-                    dfs(edge.to);
-                    path.pop();
+
+            if (depth < depthLimit) {
+                for (const edge of this.edges) {
+                    if (edge.from === currentNode && !path.some(e => e.to.id === edge.to.id)) {
+                        queue.push({ path: [...path, edge], depth: depth + 1 });
+                    }
                 }
             }
-    
-            visited[currentNode.id] = false;
         }
-    
-        if (!bannedSet.has(startNode.id)) {
-            dfs(startNode);
-        }
+
         return allPaths;
-    }    
+    }
 
     initializeGraph(quantities: Quantity[], phenomena: Phenomenon[]) {
         this.nodes = [];

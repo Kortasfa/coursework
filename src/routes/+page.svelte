@@ -2,12 +2,24 @@
 	import { findQuantitieName, quantities } from '../data/physicalQuantities';
 	import { findPhenomenaData } from '../data/effectsChain';
 	import { graph, type Edge } from '../data/graph';
-	import { writable } from 'svelte/store';
-	import { TabGroup, Tab } from '@skeletonlabs/skeleton';
-	import { ListBox, ListBoxItem } from '@skeletonlabs/skeleton';
+	import { writable, derived } from 'svelte/store';
+	import {
+		TabGroup,
+		Tab,
+		ListBox,
+		ListBoxItem,
+		Paginator,
+		type PaginationSettings
+	} from '@skeletonlabs/skeleton';
 
-	let tabSet: number = 0;
-	let bansId: number[] = [];
+	let firstTabSet: number = 0;
+	let secondTabSet: number = 0;
+	let depth: number = 5;
+	let start: number = 0;
+	let end: number = 0;
+	let loading: Boolean = false;
+	let inputBansId: number[] = [];
+	let fullBansId: number[] = [];
 
 	type TableData = {
 		phenomenonName: string;
@@ -15,28 +27,46 @@
 		outputQuantitie: string;
 	};
 
-	const start = writable(0);
-	const end = writable(0);
 	const allPaths = writable<Edge[][]>([]);
 	const allPathsTableData = writable<TableData[][]>([]);
-	const loading = writable(false);
+
+	let paginationSettings = {
+		page: 0,
+		limit: 1,
+		size: 0,
+		amounts: [1, 2, 5, 10]
+	} satisfies PaginationSettings;
+
+	$: paginationSettings.size = $allPathsTableData.length;
+
+	$: paginatedTableData = derived(allPathsTableData, ($allPathsTableData) => {
+		const startIndex = paginationSettings.page * paginationSettings.limit;
+		const endIndex = startIndex + paginationSettings.limit;
+		return $allPathsTableData.slice(startIndex, endIndex);
+	});
 
 	async function findAllPaths() {
-		loading.set(true);
+		loading = true;
 		await new Promise((r) => setTimeout(r, 0));
-		const startValue = $start;
-		const endValue = $end;
-		const paths = graph.findAllPaths(startValue, endValue, bansId);
+		const paths = graph.findAllPaths(start, end, depth);
 		allPaths.set(paths);
 		const pathsTableData: TableData[][] = [];
+		const inputBansSet = new Set(inputBansId);
 
 		if (paths) {
 			paths.forEach((path) => {
 				let pathTableData: TableData[] = [];
+				let shouldBanPath = false;
+
 				path.forEach((pathData) => {
 					let data = findPhenomenaData(pathData.phenomenonName);
 					let inputQuantities: string[] = [];
+
 					data?.inputQuantities.forEach((element) => {
+						if (inputBansSet.has(element)) {
+							shouldBanPath = true;
+						}
+
 						let quantityName = findQuantitieName(element);
 						if (quantityName) {
 							inputQuantities.push(quantityName);
@@ -51,12 +81,16 @@
 						});
 					}
 				});
-				pathsTableData.push(pathTableData);
+
+				if (!shouldBanPath) {
+					pathsTableData.push(pathTableData);
+				}
 			});
 		}
+
 		pathsTableData.sort((a, b) => a.length - b.length);
 		allPathsTableData.set(pathsTableData);
-		loading.set(false);
+		loading = false;
 	}
 </script>
 
@@ -64,26 +98,26 @@
 	<div class="inputs">
 		<div class="card p-1">
 			<TabGroup>
-				<Tab bind:group={tabSet} name="tab1" value={0}>Входы</Tab>
-				<Tab bind:group={tabSet} name="tab2" value={1}>Запреты</Tab>
+				<Tab bind:group={firstTabSet} name="tab1" value={0}>Входы</Tab>
+				<Tab bind:group={firstTabSet} name="tab2" value={1}>Запреты на входы</Tab>
 				<svelte:fragment slot="panel">
-					{#if tabSet === 0}
+					{#if firstTabSet === 0}
 						<header class="card-header h3">Входное значение</header>
-						<section class="p-4">
-							<select bind:value={$start} class="select" size="9">
+						<section class="p-4 list_height">
+							<ListBox class="select">
 								{#each quantities as quantity}
-									<option value={quantity.id}>
+									<ListBoxItem bind:group={start} name="medium" value={quantity.id}>
 										{quantity.name}
-									</option>
+									</ListBoxItem>
 								{/each}
-							</select>
+							</ListBox>
 						</section>
-					{:else if tabSet === 1}
-						<header class="card-header h3">Запреты на входы</header>
-						<section class="p-4 bans">
-							<ListBox multiple>
+					{:else if firstTabSet === 1}
+						<header class="card-header h3">Запреты на доп входы</header>
+						<section class="p-4 list_height">
+							<ListBox multiple class="select">
 								{#each quantities as quantity}
-									<ListBoxItem bind:group={bansId} name="medium" value={quantity.id}>
+									<ListBoxItem bind:group={inputBansId} name="medium" value={quantity.id}>
 										{quantity.name}
 									</ListBoxItem>
 								{/each}
@@ -94,32 +128,53 @@
 			</TabGroup>
 		</div>
 		<div class="card p-1">
-			<header class="card-header h3">Конечное значение</header>
-			<section class="p-4">
-				<select bind:value={$end} class="select" size="9">
-					{#each quantities as quantity}
-						<option value={quantity.id}>{quantity.name}</option>
-					{/each}
-				</select>
-			</section>
+			<TabGroup>
+				<Tab bind:group={secondTabSet} name="tab1" value={0}>Выход</Tab>
+				<Tab bind:group={secondTabSet} name="tab2" value={1}>Запреты на выходы</Tab>
+				<svelte:fragment slot="panel">
+					{#if secondTabSet === 0}
+						<header class="card-header h3">Конечное значение</header>
+						<section class="p-4 list_height">
+							<ListBox class="select">
+								{#each quantities as quantity}
+									<ListBoxItem bind:group={end} name="medium" value={quantity.id}>
+										{quantity.name}
+									</ListBoxItem>
+								{/each}
+							</ListBox>
+						</section>
+					{:else if secondTabSet === 1}
+						<header class="card-header h3">Запреты на выходы</header>
+						<section class="p-4 list_height">
+							<ListBox multiple class="select">
+								{#each quantities as quantity}
+									<ListBoxItem bind:group={fullBansId} name="medium" value={quantity.id}>
+										{quantity.name}
+									</ListBoxItem>
+								{/each}
+							</ListBox>
+						</section>
+					{/if}
+				</svelte:fragment>
+			</TabGroup>
 		</div>
 		<div class="card p-1">
-			<header class="card-header h3">Инструкция</header>
+			<header class="card-header h3">Инструкция 📄</header>
 			<section class="p-4">
-				<h4 class="h4">Выбор входного и выходного значения</h4>
+				<h4 class="h4">Выбор входного и выходного значения 🧭</h4>
 				<p>
 					В левом и правом блоках "Входное значение" и "Конечное значение" <br />
 					соответственно выберите физические величины, между которыми вы <br /> хотели бы найти кратчайший
 					путь преобразования.
 				</p>
 				<br />
-				<h4 class="h4">Найти все пути</h4>
+				<h4 class="h4">Найти все пути 🔍</h4>
 				<p>
-					Нажмите кнопку "Найти все пути", чтобы приложение выполнело <br /> поиск всех путей между выбранными
+					Нажмите кнопку "Найти все пути", чтобы приложение выполнило <br /> поиск всех путей между выбранными
 					вами величинами.
 				</p>
 				<br />
-				<h4 class="h4">Результаты</h4>
+				<h4 class="h4">Результаты 📊</h4>
 				<p>
 					Если существует кратчайший путь между выбранными вами величинами, он <br /> будет
 					отображен ниже кнопки в виде списка преобразований. <br /> Если путь не найден, будет
@@ -132,16 +187,30 @@
 		<button type="button" class="btn variant-filled card-hover" on:click={findAllPaths}>
 			Найти все пути
 		</button>
-		{#if $loading}
+		<span>Глубина поиска</span>
+		<label class="label">
+			<select class="select" bind:value={depth}>
+				<option value="1">1</option>
+				<option value="3">3</option>
+				<option value="5">5</option>
+				<option value="10">10</option>
+			</select>
+		</label>
+		{#if loading}
 			<p>Загрузка...</p>
 		{/if}
-		{#if $allPaths.length > 0 && !$loading}
-			<p>Найдено {$allPaths.length}</p>
+		{#if $allPaths.length > 0 && !loading}
+			<Paginator
+				bind:settings={paginationSettings}
+				showFirstLastButtons={false}
+				showPreviousNextButtons={true}
+				amountText="путей"
+			/>
 		{/if}
 	</div>
-	{#if !$loading}
+	{#if !loading}
 		{#if $allPaths.length > 0}
-			{#each $allPathsTableData as tables}
+			{#each $paginatedTableData as tables}
 				<div class="table-container inputs">
 					{#each tables as table, i}
 						<table class="table table-hover">
@@ -185,7 +254,7 @@
 	.arrow {
 		margin-top: 40px;
 	}
-	.bans {
+	.list_height {
 		height: 350px;
 		overflow: auto;
 	}

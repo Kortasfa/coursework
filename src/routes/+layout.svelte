@@ -35,7 +35,7 @@
 				>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
-				<div class="btn-group variant-filled">
+				<div class="btn-group ">
 					<button on:click={() => changeTheme('dark')}>Темный</button>
 					<button on:click={() => changeTheme('white')}>Светлый</button>
 				</div>
