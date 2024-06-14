@@ -14,7 +14,7 @@
 
 	let firstTabSet: number = 0;
 	let secondTabSet: number = 0;
-	let depth: number = 5;
+	let depth = '5';
 	let start: number = 0;
 	let end: number = 0;
 	let loading: Boolean = false;
@@ -34,7 +34,7 @@
 		page: 0,
 		limit: 1,
 		size: 0,
-		amounts: [1, 2, 5, 10]
+		amounts: [1, 3, 5, 10]
 	} satisfies PaginationSettings;
 
 	$: paginationSettings.size = $allPathsTableData.length;
@@ -48,7 +48,7 @@
 	async function findAllPaths() {
 		loading = true;
 		await new Promise((r) => setTimeout(r, 0));
-		const paths = graph.findAllPaths(start, end, depth);
+		const paths = graph.findAllPaths(start, end, parseInt(depth));
 		allPaths.set(paths);
 		const pathsTableData: TableData[][] = [];
 		const inputBansSet = new Set(inputBansId);
@@ -192,7 +192,7 @@
 			<select class="select" bind:value={depth}>
 				<option value="1">1</option>
 				<option value="3">3</option>
-				<option value="5">5</option>
+				<option value="5" selected>5</option>
 				<option value="10">10</option>
 			</select>
 		</label>
