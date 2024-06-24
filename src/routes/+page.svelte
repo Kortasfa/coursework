@@ -22,7 +22,7 @@
 	let fullBansId: number[] = [];
 
 	type TableData = {
-		phenomenonName: string;
+		phenomenaNames: string[];
 		inputQuantities: string[];
 		outputQuantitie: string;
 	};
@@ -51,7 +51,7 @@
 		const paths = graph.findAllPaths(start, end, parseInt(depth));
 		allPaths.set(paths);
 		const pathsTableData: TableData[][] = [];
-		const inputBansSet = new Set(inputBansId);
+		const inputBansSet = new Set(fullBansId);
 
 		if (paths) {
 			paths.forEach((path) => {
@@ -59,25 +59,30 @@
 				let shouldBanPath = false;
 
 				path.forEach((pathData) => {
-					let data = findPhenomenaData(pathData.phenomenonName);
+					let data = findPhenomenaData(pathData.phenomenaNames);
 					let inputQuantities: string[] = [];
-
-					data?.inputQuantities.forEach((element) => {
-						if (inputBansSet.has(element)) {
-							shouldBanPath = true;
-						}
-
-						let quantityName = findQuantitieName(element);
-						if (quantityName) {
-							inputQuantities.push(quantityName);
-						}
-					});
+					let phenomenaNames: string[] = [];
 
 					if (data) {
+						data.forEach((phenomenon, index) => {
+							phenomenon.inputQuantities.forEach((element) => {
+								if (inputBansSet.has(element)) {
+									shouldBanPath = true;
+								}
+
+								let quantityName = findQuantitieName(element);
+								if (quantityName) {
+									inputQuantities.push(quantityName + ' ' + `${index + 1}`);
+								}
+							});
+
+							phenomenaNames.push(phenomenon.name + ' ' + `${index + 1}`);
+						});
+
 						pathTableData.push({
-							phenomenonName: pathData.phenomenonName,
-							inputQuantities: inputQuantities,
-							outputQuantitie: findQuantitieName(data.outputQuantities) || ''
+							phenomenaNames,
+							inputQuantities,
+							outputQuantitie: findQuantitieName(data[0].outputQuantities) || ''
 						});
 					}
 				});
@@ -99,7 +104,7 @@
 		<div class="card p-1">
 			<TabGroup>
 				<Tab bind:group={firstTabSet} name="tab1" value={0}>Входы</Tab>
-				<Tab bind:group={firstTabSet} name="tab2" value={1}>Запреты на входы</Tab>
+				<Tab bind:group={firstTabSet} name="tab2" value={1}>Полные запреты</Tab>
 				<svelte:fragment slot="panel">
 					{#if firstTabSet === 0}
 						<header class="card-header h3">Входное значение</header>
@@ -113,11 +118,11 @@
 							</ListBox>
 						</section>
 					{:else if firstTabSet === 1}
-						<header class="card-header h3">Запреты на доп входы</header>
+						<header class="card-header h3">Полные запреты</header>
 						<section class="p-4 list_height">
 							<ListBox multiple class="select">
 								{#each quantities as quantity}
-									<ListBoxItem bind:group={inputBansId} name="medium" value={quantity.id}>
+									<ListBoxItem bind:group={fullBansId} name="medium" value={quantity.id}>
 										{quantity.name}
 									</ListBoxItem>
 								{/each}
@@ -130,31 +135,17 @@
 		<div class="card p-1">
 			<TabGroup>
 				<Tab bind:group={secondTabSet} name="tab1" value={0}>Выход</Tab>
-				<Tab bind:group={secondTabSet} name="tab2" value={1}>Запреты на выходы</Tab>
 				<svelte:fragment slot="panel">
-					{#if secondTabSet === 0}
-						<header class="card-header h3">Конечное значение</header>
-						<section class="p-4 list_height">
-							<ListBox class="select">
-								{#each quantities as quantity}
-									<ListBoxItem bind:group={end} name="medium" value={quantity.id}>
-										{quantity.name}
-									</ListBoxItem>
-								{/each}
-							</ListBox>
-						</section>
-					{:else if secondTabSet === 1}
-						<header class="card-header h3">Запреты на выходы</header>
-						<section class="p-4 list_height">
-							<ListBox multiple class="select">
-								{#each quantities as quantity}
-									<ListBoxItem bind:group={fullBansId} name="medium" value={quantity.id}>
-										{quantity.name}
-									</ListBoxItem>
-								{/each}
-							</ListBox>
-						</section>
-					{/if}
+					<header class="card-header h3">Конечное значение</header>
+					<section class="p-4 list_height">
+						<ListBox class="select">
+							{#each quantities as quantity}
+								<ListBoxItem bind:group={end} name="medium" value={quantity.id}>
+									{quantity.name}
+								</ListBoxItem>
+							{/each}
+						</ListBox>
+					</section>
 				</svelte:fragment>
 			</TabGroup>
 		</div>
@@ -211,16 +202,19 @@
 	{#if !loading}
 		{#if $allPaths.length > 0}
 			{#each $paginatedTableData as tables}
+				<hr class="!border-t-2" />
 				<div class="table-container inputs">
 					{#each tables as table, i}
 						<table class="table table-hover">
 							<caption>
-								{table.phenomenonName}
+								{#each table.phenomenaNames as phenomenonName, j}
+									{phenomenonName}{j < table.phenomenaNames.length - 1 ? ', ' : ''}
+								{/each}
 							</caption>
 							<thead>
 								<tr>
-									<th>Входящие ФЭ</th>
-									<th>Выходящие ФЭ</th>
+									<th>Входящие ФВ</th>
+									<th>Выходящие ФВ</th>
 								</tr>
 							</thead>
 							<tbody>

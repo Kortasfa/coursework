@@ -4,17 +4,21 @@ export type Phenomenon = {
     outputQuantities: number;
 };
 
-export function findPhenomenaData(name: string): Phenomenon | null {
-    for (const connection of phenomena) {
-        if (connection.name === name) {
-            return {
+export function findPhenomenaData(names: string[]): Phenomenon[] | null {
+    const phenomenaData: Phenomenon[] = [];
+
+    for (const name of names) {
+        const connection = phenomena.find(conn => conn.name === name);
+        if (connection) {
+            phenomenaData.push({
                 name: connection.name,
                 inputQuantities: connection.inputQuantities,
                 outputQuantities: connection.outputQuantities
-            };
+            });
         }
     }
-    return null;
+
+    return phenomenaData.length > 0 ? phenomenaData : null;
 }
 
 export const phenomena: Phenomenon[] = [

@@ -1,7 +1,7 @@
 import { phenomena, type Phenomenon } from "./effectsChain";
 import { quantities, type Quantity } from "./physicalQuantities";
 
-export type Edge = { from: Quantity, to: Quantity, phenomenonName: string }
+export type Edge = { from: Quantity, to: Quantity, phenomenaNames: string[] }
 
 export class Graph {
     nodes: Quantity[];
@@ -20,36 +20,13 @@ export class Graph {
         const fromNode = this.nodes.find(node => node.id === fromId);
         const toNode = this.nodes.find(node => node.id === toId);
         if (fromNode && toNode) {
-            this.edges.push({ from: fromNode, to: toNode, phenomenonName });
-        }
-    }
-
-    findShortestPath(startId: number, endId: number): Edge[] {
-        const startNode = this.nodes.find(node => node.id === startId);
-        const endNode = this.nodes.find(node => node.id === endId);
-
-        if (!startNode || !endNode) return [];
-
-        const visited: { [key: number]: boolean } = {};
-        const queue: { node: Quantity, path: Edge[] }[] = [];
-        queue.push({ node: startNode, path: [] });
-
-        while (queue.length > 0) {
-            const { node, path } = queue.shift()!;
-            visited[node.id] = true;
-
-            if (node === endNode) {
-                return path;
-            }
-
-            for (const edge of this.edges) {
-                if (edge.from === node && !visited[edge.to.id]) {
-                    queue.push({ node: edge.to, path: [...path, edge] });
-                }
+            const existingEdge = this.edges.find(edge => edge.from === fromNode && edge.to === toNode);
+            if (existingEdge) {
+                existingEdge.phenomenaNames.push(phenomenonName);
+            } else {
+                this.edges.push({ from: fromNode, to: toNode, phenomenaNames: [phenomenonName] });
             }
         }
-
-        return [];
     }
 
     findAllPaths(startId: number, endId: number, depthLimit: number): Edge[][] {
@@ -110,4 +87,3 @@ const graph = new Graph();
 graph.initializeGraph(quantities, phenomena);
 
 export { graph };
-
